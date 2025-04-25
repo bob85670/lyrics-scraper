@@ -3,11 +3,9 @@ import json
 import time
 import os
 
-# Define the API endpoint
 API_URL = "https://api.lyrics.ovh/v1/{artist}/{title}"
 
 # List of pop songs to fetch lyrics for (artist, title)
-# Feel free to modify this list!
 POP_SONGS = [
     ("Taylor Swift", "Blank Space"),
     ("Ed Sheeran", "Shape of You"),
@@ -27,7 +25,7 @@ def get_lyrics_from_ovh(artist, title, retries=3, delay=2):
     print(f"Attempting to fetch lyrics for: {title} by {artist} from {url}")
     for attempt in range(retries):
         try:
-            response = requests.get(url, timeout=10) # Add a timeout
+            response = requests.get(url, timeout=10)
             response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
 
             # Check if the response is valid JSON
@@ -48,7 +46,6 @@ def get_lyrics_from_ovh(artist, title, retries=3, delay=2):
             else:
                 # Handle cases where the API returns non-JSON (e.g., sometimes HTML error pages)
                 print(f"Received non-JSON response for '{title}' by {artist}. Status: {response.status_code}")
-                # You might want to inspect response.text here if debugging
                 return None
 
         except requests.exceptions.HTTPError as http_err:
@@ -61,7 +58,6 @@ def get_lyrics_from_ovh(artist, title, retries=3, delay=2):
             print(f"Request error fetching lyrics for {title} by {artist}: {req_err} (Attempt {attempt + 1}/{retries})")
         except json.JSONDecodeError:
              print(f"Failed to decode JSON response for {title} by {artist}. (Attempt {attempt + 1}/{retries})")
-             # Maybe inspect response.text here
         except Exception as e:
             print(f"An unexpected error occurred for {title} by {artist}: {e} (Attempt {attempt + 1}/{retries})")
 
@@ -99,7 +95,7 @@ if __name__ == "__main__":
             fetched_lyrics[(artist, title)] = lyrics
         else:
             songs_not_found.append(f"{title} by {artist}")
-        time.sleep(1) # Be respectful to the API, add a small delay between requests
+        time.sleep(1) # add a small delay between requests
 
     if fetched_lyrics:
         save_lyrics(fetched_lyrics)
