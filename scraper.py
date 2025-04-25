@@ -1,165 +1,148 @@
-# PYTHON GENIUS SCRAPER
-
-import requests
-from bs4 import BeautifulSoup
+# PYTHON GENIUS SCRAPER using lyricsgenius
+import lyricsgenius
 import os
-import time
-from fake_useragent import UserAgent
-
 from dotenv import load_dotenv, find_dotenv
+
 load_dotenv(find_dotenv())
 
 GENIUS_API_KEY = os.environ.get('GENIUS_API_KEY')
+if not GENIUS_API_KEY:
+    print("Error: GENIUS_API_KEY not found in environment variables.")
+    exit()
 
-base_url = 'http://api.genius.com'
-headers = {
-    'Authorization': 'Bearer ' + GENIUS_API_KEY
-}
+# Initialize lyricsgenius
+# You might want to adjust timeout and retries based on your needs
+genius = lyricsgenius.Genius(GENIUS_API_KEY,
+                             skip_non_songs=True,
+                             excluded_terms=["(Remix)", "(Live)"],
+                             remove_section_headers=True,
+                             timeout=15,
+                             retries=3,
+                             verbose=True,
+                             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
 
 # list of artists to scrape from
-artists = [
+artists_to_scrape = [
             'Britney Spears',
-            'Queen',
-            'OneRepublic',
-            'Whitney Houston',
-            'Stevie Wonder',
-            'Bon Jovi',
-            'Avril Lavigne',
-            'Carly Rae Jepsen',
-            'David Bowie',
-            'Amy Winehouse',
-            'Christina Aguilera',
-            'Gwen Stefani',
-            'Coldplay',
-            'Frank Sinatra',
-            'Celine Dion',
-            'Backstreet Boys',
-            'Janet Jackson',
-            'Jennifer Lopez',
-            'Meghan Trainor',
-            'Ellie Goulding',
-            'Nelly Furtado',
-            'Justin Bieber',
-            'Katy Perry',
-            'Bruno Mars',
-            'Beyonce',
-            'Lorde',
-            'The Weeknd',
-            'John Legend',
-            'Rihanna',
-            'Lady Gaga',
-            'Usher',
-            'Miley Cyrus',
-            'Taylor Swift',
-            'Major Lazer',
-            'One Direction',
-            'Ed Sheeran',
-            'Sia',
-            'Ariana Grande',
-            'Calvin Harris',
-            'Mariah Carey',
-            'Madonna',
-            'Elton John',
-            'The Beatles',
-            'Michael Jackson',
-            'Bee Gees',
-            'Prince',
-            'Maroon 5',
-            'The Black Eyed Peas',
-            'P!NK',
-            'TLC',
-            'R. Kelly',
-            'Kelly Clarkson',
-            'Justin Timberlake',
-            'Alessia Cara',
-            'Shawn Mendes',
-            'Hailee Steinfeld',
-            'Jason Derulo',
-            'Adele',
-            'Zedd',
-            'Train',
-            'Selena Gomez',
-            'Kygo',
+            # 'Queen',
+            # 'OneRepublic',
+            # 'Whitney Houston',
+            # 'Stevie Wonder',
+            # 'Bon Jovi',
+            # 'Avril Lavigne',
+            # 'Carly Rae Jepsen',
+            # 'David Bowie',
+            # 'Amy Winehouse',
+            # 'Christina Aguilera',
+            # 'Gwen Stefani',
+            # 'Coldplay',
+            # 'Frank Sinatra',
+            # 'Celine Dion',
+            # 'Backstreet Boys',
+            # 'Janet Jackson',
+            # 'Jennifer Lopez',
+            # 'Meghan Trainor',
+            # 'Ellie Goulding',
+            # 'Nelly Furtado',
+            # 'Justin Bieber',
+            # 'Katy Perry',
+            # 'Bruno Mars',
+            # 'Beyonce',
+            # 'Lorde',
+            # 'The Weeknd',
+            # 'John Legend',
+            # 'Rihanna',
+            # 'Lady Gaga',
+            # 'Usher',
+            # 'Miley Cyrus',
+            # 'Taylor Swift',
+            # 'Major Lazer',
+            # 'One Direction',
+            # 'Ed Sheeran',
+            # 'Sia',
+            # 'Ariana Grande',
+            # 'Calvin Harris',
+            # 'Mariah Carey',
+            # 'Madonna',
+            # 'Elton John',
+            # 'The Beatles',
+            # 'Michael Jackson',
+            # 'Bee Gees',
+            # 'Prince',
+            # 'Maroon 5',
+            # 'The Black Eyed Peas',
+            # 'P!NK',
+            # 'TLC',
+            # 'R. Kelly', # Note: Consider ethical implications of scraping certain artists
+            # 'Kelly Clarkson',
+            # 'Justin Timberlake',
+            # 'Alessia Cara',
+            # 'Shawn Mendes',
+            # 'Hailee Steinfeld',
+            # 'Jason Derulo',
+            # 'Adele',
+            # 'Zedd',
+            # 'Train',
+            # 'Selena Gomez',
+            # 'Kygo',
         ]
 
-def get_lyrics(song_api_path):
-    try:
-        song_url = base_url + song_api_path
-        response = requests.get(song_url, headers=headers)
-        json = response.json()
-
-        path = json['response']['song']['path']
-        #print('Path %s' % path)
-        page_url = 'http://genius.com' + path
-
-        # Add delay to avoid rate limiting
-        time.sleep(2)
-        
-        # Use rotating user agents to appear more like a browser
-        ua = UserAgent()
-        page_headers = {
-            'User-Agent': ua.random
-        }
-        
-        # Get the page content
-        page = requests.get(page_url, headers=page_headers)
-        html = BeautifulSoup(page.text, 'html.parser')
-        
-        # Try different possible lyrics div classes (Genius sometimes changes these)
-        lyrics_div = html.find('div', class_='lyrics') or \
-                    html.find('div', class_='Lyrics__Container-sc-1ynbvzw-6') or \
-                    html.find('div', class_='SongPageGriddesktop-sc-1px5b71-0')
-        
-        if lyrics_div:
-            # Clean up the lyrics text
-            lyrics = lyrics_div.get_text().strip()
-            
-            # Save to file with song information
-            with open('data/input.txt', 'a', encoding='utf-8') as f:
-                f.write(f"\n\n--- {json['response']['song']['title']} by {json['response']['song']['artist_names']} ---\n")
-                f.write(lyrics)
-                f.write("\n" + "="*50 + "\n")  # Separator between songs
-            
-            print(f"Successfully scraped: {json['response']['song']['title']}")
-        else:
-            print(f"Could not find lyrics for: {json['response']['song']['title']}")
-            
-    except Exception as e:
-        print(f"Error getting lyrics: {str(e)}")
-
-def search_songs():
+def scrape_lyrics(output_file='data/input.txt', max_songs_per_artist=5):
     # Create data directory if it doesn't exist
     os.makedirs('data', exist_ok=True)
-    
-    # Clear the input file before starting
-    with open('data/input.txt', 'w', encoding='utf-8') as f:
-        f.write("LYRICS COLLECTION\n\n")
-    
-    for artist_name in artists:
+
+    # Clear the input file before starting or create it with a header
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write("LYRICS COLLECTION (Generated by lyricsgenius)\n\n")
+
+    total_songs_scraped = 0
+
+    for artist_name in artists_to_scrape:
+        print(f"\nSearching for songs by {artist_name}...")
+        songs_scraped_for_artist = 0
         try:
-            print(f"\nSearching for songs by {artist_name}")
-            search_url = base_url + '/search'
-            search_params = {
-                'q': artist_name,
-                'per_page': 5  # Limit to top 5 songs per artist
-            }
-            
-            response = requests.get(search_url, headers=headers, params=search_params)
-            json = response.json()
-            
-            if 'response' in json and 'hits' in json['response']:
-                for hit in json['response']['hits']:
-                    if hit['result']['primary_artist']['name'].lower() == artist_name.lower():
-                        get_lyrics(hit['result']['api_path'])
-                        time.sleep(1)  # Delay between songs
-            
-            time.sleep(2)  # Delay between artists
-            
+            # Search for the artist
+            artist = genius.search_artist(artist_name, max_songs=max_songs_per_artist, sort='popularity')
+
+            if artist:
+                print(f"Found artist: {artist.name}. Scraping top {max_songs_per_artist} songs...")
+                # The library handles getting the songs internally now
+                for song in artist.songs:
+                    if song and song.lyrics:
+                        # Sanitize lyrics (optional, lyricsgenius does some cleaning)
+                        lyrics = song.lyrics.strip()
+                        # Avoid excessively short entries that might not be full lyrics
+                        if len(lyrics.split()) > 10:
+                            with open(output_file, 'a', encoding='utf-8') as f:
+                                f.write(f"\n\n--- {song.title} by {song.artist} ---\n")
+                                f.write(lyrics)
+                                f.write("\n" + "="*50 + "\n")
+                            print(f"  Successfully scraped: {song.title}")
+                            songs_scraped_for_artist += 1
+                            total_songs_scraped += 1
+                        else:
+                            print(f"  Skipped (lyrics too short): {song.title}")
+                    else:
+                         print(f"  Could not find lyrics for: {song.title if song else 'Unknown Song'}")
+
+                if songs_scraped_for_artist == 0:
+                     print(f"  No suitable lyrics found for top songs of {artist_name}.")
+
+            else:
+                print(f"Could not find artist: {artist_name}")
+
         except Exception as e:
-            print(f"Error searching for {artist_name}: {str(e)}")
-            continue
+            # Catch potential errors during API requests or processing
+            print(f"Error searching for or processing {artist_name}: {str(e)}")
+            # You might want to add a delay here before retrying or moving to the next artist
+            # import time
+            # time.sleep(5)
+            continue # Move to the next artist
+
+    print(f"\nScraping completed! Scraped {total_songs_scraped} songs.")
+    print(f"Check {output_file} for results.")
+
 
 if __name__ == "__main__":
-    print("Starting lyrics scraper...")
-    search_songs()
-    print("\nScraping completed! Check data/input.txt for results.")
+    print("Starting lyrics scraper using lyricsgenius...")
+    scrape_lyrics(max_songs_per_artist=5) # Adjust max songs as needed
