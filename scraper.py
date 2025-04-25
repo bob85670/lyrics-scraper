@@ -88,18 +88,16 @@ def get_lyrics(song_api_path):
     #print 'path %s' % path
     page_url = 'http://genius.com' + path
     page = requests.get(page_url)
-
-    print 'Page %s' % page
+    print('Page %s' % page)
 
     html = BeautifulSoup(page.text, 'html.parser')
-
-    print 'HTML %s' % html
+    print('HTML %s' % html)
 
     [h.extract() for h in html('script')]
     lyrics = html.find('div', { 'class': 'lyrics'}).get_text()
 
     # print out the lyrics
-    print 'Lyrics %s' % lyrics
+    print('Lyrics %s' % lyrics)
     with open('data/input.txt', 'a') as f:
         f.write(lyrics.encode('utf-8'))
         f.close()
@@ -107,17 +105,15 @@ def get_lyrics(song_api_path):
 if __name__ == "__main__":
     for artist_name in artists:
         search_url = base_url + '/search?q=%s' % artist_name
-        print 'Base URL: %s' % (search_url)
-        print 'headers %s' % (headers)
+        print('Search URL %s' % search_url)
+        print('Headers %s' % headers)
 
-         #send the request
+        # send the request
         response = requests.get(search_url, headers=headers)
         json = response.json()
-
         #print "JSON %s" % (json)
 
         song_info = None
-
         for hit in json['response']['hits']:
-            print hit['result']['api_path']
+            print('Hit %s' % hit)
             get_lyrics(hit['result']['api_path'])
