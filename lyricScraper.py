@@ -5,54 +5,69 @@ import os
 
 API_URL = "https://api.lyrics.ovh/v1/{artist}/{title}"
 
+def clean_artist_name(artist):
+    """Clean artist name by removing featuring/and sections."""
+    if ' featuring ' in artist.lower():
+        return artist.split(' featuring ')[0].strip()
+    if ', ' in artist.lower():
+        return artist.split(', ')[0].strip()
+    if ' and ' in artist:
+        return artist.split(' and ')[0].strip()
+    return artist
+
 def get_lyrics_from_ovh(artist, title, retries=3, delay=2):
-    """Fetches lyrics from the lyrics.ovh API."""
-    url = API_URL.format(artist=artist, title=title)
-    print(f"Attempting to fetch lyrics for: {title} by {artist} from {url}")
-    for attempt in range(retries):
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
+    """Fetches lyrics from the lyrics.ovh API with support for featured artists."""
+    
+    # First attempt: Try with cleaned artist name
+    clean_artist = clean_artist_name(artist)
+    
+    # If the artist name was modified, try both versions
+    attempts = [(clean_artist, title)]
+    if clean_artist != artist and ' featuring ' in artist.lower():
+        featured = artist.split(' featuring ')[1].strip()
+        new_title = f"{title} (feat. {featured})"
+        attempts.append((clean_artist, new_title))
 
-            # Check if the response is valid JSON
-            if 'application/json' in response.headers.get('Content-Type', ''):
-                data = response.json()
-                if 'lyrics' in data:
-                    # Basic cleaning: replace multiple newlines and strip whitespace
-                    lyrics = data['lyrics'].replace('\r\n', '\n').strip()
-                    if lyrics: # Check if lyrics are not empty after stripping
-                        print(f"Successfully fetched lyrics for: {title} by {artist}")
-                        return lyrics
-                    else:
-                        print(f"API returned empty lyrics for: {title} by {artist}")
-                        return None # Treat empty lyrics as not found
+    # Try each artist/title combination
+    for attempt_artist, attempt_title in attempts:
+        url = API_URL.format(artist=attempt_artist, title=attempt_title)
+        print(f"Attempting to fetch lyrics for: {attempt_title} by {attempt_artist} from {url}")
+        
+        for retry in range(retries):
+            try:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+
+                if 'application/json' in response.headers.get('Content-Type', ''):
+                    data = response.json()
+                    if 'lyrics' in data:
+                        lyrics = data['lyrics'].replace('\r\n', '\n').strip()
+                        if lyrics:
+                            print(f"Successfully fetched lyrics for: {attempt_title} by {attempt_artist}")
+                            return lyrics
+                        else:
+                            print(f"API returned empty lyrics for: {attempt_title} by {attempt_artist}")
                 else:
-                    print(f"API response for '{title}' by {artist} did not contain 'lyrics' key.")
-                    return None # Lyrics key missing
-            else:
-                # Handle cases where the API returns non-JSON (e.g., sometimes HTML error pages)
-                print(f"Received non-JSON response for '{title}' by {artist}. Status: {response.status_code}")
-                return None
+                    print(f"Received non-JSON response for '{attempt_title}' by {attempt_artist}. Status: {response.status_code}")
 
-        except requests.exceptions.HTTPError as http_err:
-            if response.status_code == 404:
-                print(f"Lyrics not found (404) for: {title} by {artist}")
-                return None # Song not found, stop retrying for this song
-            else:
-                print(f"HTTP error fetching lyrics for {title} by {artist}: {http_err} (Attempt {attempt + 1}/{retries})")
-        except requests.exceptions.RequestException as req_err:
-            print(f"Request error fetching lyrics for {title} by {artist}: {req_err} (Attempt {attempt + 1}/{retries})")
-        except json.JSONDecodeError:
-             print(f"Failed to decode JSON response for {title} by {artist}. (Attempt {attempt + 1}/{retries})")
-        except Exception as e:
-            print(f"An unexpected error occurred for {title} by {artist}: {e} (Attempt {attempt + 1}/{retries})")
+            except requests.exceptions.HTTPError as http_err:
+                if response.status_code == 404:
+                    print(f"Lyrics not found (404) for: {attempt_title} by {attempt_artist}")
+                    break  # Try next artist/title combination if available
+                else:
+                    print(f"HTTP error fetching lyrics for {attempt_title} by {attempt_artist}: {http_err} (Attempt {retry + 1}/{retries})")
+            except requests.exceptions.RequestException as req_err:
+                print(f"Request error fetching lyrics for {attempt_title} by {attempt_artist}: {req_err} (Attempt {retry + 1}/{retries})")
+            except json.JSONDecodeError:
+                print(f"Failed to decode JSON response for {attempt_title} by {attempt_artist}. (Attempt {retry + 1}/{retries})")
+            except Exception as e:
+                print(f"An unexpected error occurred for {attempt_title} by {attempt_artist}: {e} (Attempt {retry + 1}/{retries})")
 
+            if retry < retries - 1:
+                print(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
 
-        if attempt < retries - 1:
-            print(f"Retrying in {delay} seconds...")
-            time.sleep(delay)
-
-    print(f"Failed to fetch lyrics for {title} by {artist} after {retries} attempts.")
+    print(f"Failed to fetch lyrics for {title} by {artist} after all attempts.")
     return None
 
 def save_lyrics(lyrics_data, output_file='data/lyrics_ovh.txt'):
