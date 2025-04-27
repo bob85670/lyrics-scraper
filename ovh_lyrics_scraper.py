@@ -86,26 +86,25 @@ def save_lyrics(lyrics_data, output_file='data/lyrics_ovh.txt'):
     print(f"Successfully saved lyrics for {count} songs to {output_file}.")
 
 if __name__ == "__main__":
-    print("Starting lyrics scraper for lyrics.ovh...")
-    fetched_lyrics = {}
-    songs_not_found = []
-
-    for artist, title in POP_SONGS:
-        lyrics = get_lyrics_from_ovh(artist, title)
-        if lyrics:
-            fetched_lyrics[(artist, title)] = lyrics
-        else:
-            songs_not_found.append(f"{title} by {artist}")
-        time.sleep(1) # add a small delay between requests
-
-    if fetched_lyrics:
+    import argparse
+    
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Fetch lyrics for a song from lyrics.ovh')
+    parser.add_argument('song_name', help='Name of the song')
+    parser.add_argument('artist', help='Name of the artist')
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    print(f"Fetching lyrics for '{args.song_name}' by {args.artist}...")
+    
+    # Get lyrics
+    lyrics = get_lyrics_from_ovh(args.artist, args.song_name)
+    
+    if lyrics:
+        # Create a dictionary with the single song
+        fetched_lyrics = {(args.artist, args.song_name): lyrics}
         save_lyrics(fetched_lyrics)
+        print("\nLyrics have been saved successfully.")
     else:
-        print("\nNo lyrics were successfully fetched.")
-
-    if songs_not_found:
-        print("\nCould not find lyrics for the following songs:")
-        for song in songs_not_found:
-            print(f"- {song}")
-
-    print("\nScraping finished.")
+        print(f"\nCould not find lyrics for '{args.song_name}' by {args.artist}")

@@ -2,7 +2,7 @@ import os
 import json
 import sys
 from wiki_billboard_list_scraper import scrape_billboard_songs, save_songs_list
-from lyricScraper import get_lyrics_from_ovh, save_lyrics
+from ovh_lyrics_scraper import get_lyrics_from_ovh, save_lyrics
 
 def process_year(year):
     """Process a single year: scrape Billboard list and fetch lyrics"""
