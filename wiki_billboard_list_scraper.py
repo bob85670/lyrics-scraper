@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import os
 
 def clean_text(text):
     """
@@ -14,12 +15,12 @@ def clean_text(text):
     text = text.replace('"', "'")
     return text
 
-def scrape_billboard_songs():
+def scrape_billboard_songs(year):
     """
-    Scrapes Billboard Year-End Hot 100 singles from Wikipedia
+    Scrapes Billboard Year-End Hot 100 singles from Wikipedia for a specific year
     Returns a list of tuples containing (artist, title)
     """
-    url = "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2024"
+    url = f"https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_{year}"
     
     try:
         response = requests.get(url)
@@ -45,46 +46,37 @@ def scrape_billboard_songs():
         return songs
         
     except Exception as e:
-        print(f"Error scraping Billboard songs: {e}")
+        print(f"Error scraping Billboard songs for year {year}: {e}")
         return []
 
-def update_pop_songs_list(songs):
+def save_songs_list(songs, year):
     """
-    Updates the POP_SONGS list in lyricscraper.py with new songs
+    Saves the scraped songs list to a JSON file in the year_lists directory
     """
+    os.makedirs('year_lists', exist_ok=True)
+    output_file = f'year_lists/{year}_songs.json'
+    
     try:
-        with open('lyricscraper.py', 'r') as file:
-            content = file.read()
-            
-        # Format the new songs list
-        songs_str = "[\n"
-        for artist, title in songs:
-            songs_str += f'    ("{artist}", "{title}"),\n'
-        songs_str += "]"
-        
-        # Replace the existing POP_SONGS list
-        import re
-        new_content = re.sub(
-            r'POP_SONGS = \[.*?\]',
-            f'POP_SONGS = {songs_str}',
-            content,
-            flags=re.DOTALL
-        )
-        
-        with open('lyricscraper.py', 'w') as file:
-            file.write(new_content)
-            
-        print(f"Successfully updated POP_SONGS list with {len(songs)} songs")
-        
+        with open(output_file, 'w') as file:
+            json.dump(songs, file, indent=2)
+        print(f"Successfully saved {len(songs)} songs to {output_file}")
+        return True
     except Exception as e:
-        print(f"Error updating POP_SONGS list: {e}")
+        print(f"Error saving songs list: {e}")
+        return False
 
 if __name__ == "__main__":
-    print("Scraping Billboard Year-End Hot 100 singles...")
-    songs = scrape_billboard_songs()
+    import sys
+    if len(sys.argv) != 2:
+        print("Usage: python wiki_billboard_list_scraper.py <year>")
+        sys.exit(1)
+        
+    year = sys.argv[1]
+    print(f"Scraping Billboard Year-End Hot 100 singles for {year}...")
+    songs = scrape_billboard_songs(year)
     
     if songs:
         print(f"Found {len(songs)} songs")
-        update_pop_songs_list(songs)
+        save_songs_list(songs, year)
     else:
-        print("No songs were found. The POP_SONGS list was not updated.")
+        print("No songs were found.")
