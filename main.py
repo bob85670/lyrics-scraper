@@ -32,7 +32,7 @@ def process_year(year):
     
     # Step 3: Save lyrics to year-specific file
     if fetched_lyrics:
-        output_file = f'data/lyrics_{year}.txt'
+        output_file = f'lyrics_data/lyrics_{year}.txt'
         save_lyrics(fetched_lyrics, output_file)
     else:
         print(f"\nNo lyrics were successfully fetched for {year}")
@@ -43,6 +43,12 @@ def process_year(year):
             print(f"- {song}")
         if len(songs_not_found) > 10:
             print(f"... and {len(songs_not_found) - 10} more")
+        # Write missing lyrics to txt in project root, grouped by year
+        with open("missing_lyrics.txt", "a", encoding="utf-8") as f:
+            f.write(f"===== Year {year} =====\n")
+            for song in songs_not_found:
+                f.write(song + "\n")
+            f.write("\n")
 
 def main():
     if len(sys.argv) != 3:
@@ -64,7 +70,7 @@ def main():
         
         # Create necessary directories
         os.makedirs('year_lists', exist_ok=True)
-        os.makedirs('data', exist_ok=True)
+        os.makedirs('lyrics_data', exist_ok=True)
         
         print(f"Starting lyrics scraping process for years {start_year} to {end_year}")
         
@@ -74,7 +80,7 @@ def main():
             
         print("\nScraping process completed!")
         print(f"JSON files can be found in the 'year_lists' directory")
-        print(f"Lyrics files can be found in the 'data' directory")
+        print(f"Lyrics files can be found in the 'lyrics_data' directory")
         
     except ValueError:
         print("Error: Years must be valid numbers")

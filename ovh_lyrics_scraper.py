@@ -70,9 +70,9 @@ def get_lyrics_from_ovh(artist, title, retries=3, delay=2):
     print(f"Failed to fetch lyrics for {title} by {artist} after all attempts.")
     return None
 
-def save_lyrics(lyrics_data, output_file='data/lyrics_ovh.txt'):
+def save_lyrics(lyrics_data, output_file='lyrics_data/lyrics_ovh.txt'):
     """Saves the fetched lyrics to a file."""
-    os.makedirs('data', exist_ok=True)
+    os.makedirs('lyrics_data', exist_ok=True)
     print(f"\nSaving lyrics to {output_file}...")
     count = 0
     with open(output_file, 'w', encoding='utf-8') as f:
