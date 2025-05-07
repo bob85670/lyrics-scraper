@@ -72,6 +72,10 @@ def main():
         os.makedirs('year_lists', exist_ok=True)
         os.makedirs('lyrics_data', exist_ok=True)
         
+        # Clear missing_lyrics.txt before writing any new data
+        with open("missing_lyrics.txt", "w", encoding="utf-8") as f:
+            f.write("# Missing Lyrics Log\n\n")
+        
         print(f"Starting lyrics scraping process for years {start_year} to {end_year}")
         
         # Process each year
